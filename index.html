@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ronza · Online assessment</title>
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* Brand tokens: change these when the new identity is ready */
+  :root{
+    --bg:#F4F4F2; --card:#FFFFFF; --ink:#1C1B1F; --muted:#6E6A72; --line:#E2E0E4;
+    --accent:#5B3F63; --accent-soft:#EFE8F1; --danger:#B3261E;
+    --radius:14px; --font:'Manrope', Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:460px;margin:0 auto;padding:20px 18px 40px;min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{font-weight:700;letter-spacing:.02em;font-size:15px}
+  .tag{font-size:12px;color:var(--accent);background:var(--accent-soft);padding:5px 10px;border-radius:99px}
+  .bar{display:flex;gap:5px;margin-bottom:8px}
+  .bar span{flex:1;height:4px;border-radius:4px;background:var(--line);transition:background .25s}
+  .bar span.on{background:var(--accent)}
+  .stepno{font-size:13px;color:var(--muted);margin:0 0 4px}
+  h1{font-size:24px;line-height:1.25;margin:0 0 6px;font-weight:700}
+  .lead{font-size:14px;color:var(--muted);margin:0 0 18px;line-height:1.5}
+  .card{background:var(--card);border-radius:var(--radius);padding:18px;border:1px solid var(--line)}
+  .step{display:none}.step.active{display:block}
+  .field{margin-bottom:16px}
+  .field:last-child{margin-bottom:0}
+  label,.label{display:block;font-size:14px;font-weight:500;margin-bottom:6px}
+  .hint{font-size:12px;color:var(--muted);margin:-2px 0 7px;line-height:1.45}
+  input[type=text],input[type=tel],input[type=number],input[type=date],textarea{
+    width:100%;font:inherit;font-size:16px;color:var(--ink);background:#fff;border:1px solid var(--line);
+    border-radius:10px;padding:12px 13px;outline:none;transition:border-color .15s}
+  textarea{min-height:84px;resize:vertical}
+  input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+  .unit{position:relative}.unit input{padding-right:42px}
+  .unit em{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-style:normal;font-size:13px;color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font:inherit;font-size:14px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:10px 14px;border-radius:99px;cursor:pointer}
+  .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .check{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--line);cursor:pointer;font-size:15px}
+  .check:first-of-type,.group + .check{border-top:0}
+  .check input{width:22px;height:22px;accent-color:var(--accent);margin:0;flex-shrink:0}
+  .group{font-size:12px;color:var(--muted);margin:14px 0 2px}
+  .group:first-child{margin-top:0}
+  .sub{margin:4px 0 0 34px}
+  .err{color:var(--danger);font-size:13px;margin-top:6px;display:none}
+  .err.show{display:block}
+  .tips{margin:0;padding-left:18px;font-size:14px;line-height:1.6}
+  .wa{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:#1F7A4D;color:#fff;
+      border-radius:12px;padding:14px;font-weight:700;font-size:15px;margin:16px 0 4px}
+  .sum{width:100%;border-collapse:collapse;font-size:14px}
+  .sum td{padding:8px 0;border-top:1px solid var(--line);vertical-align:top}
+  .sum tr:first-child td{border-top:0}
+  .sum td:first-child{color:var(--muted);width:45%;padding-right:10px}
+  nav{display:flex;gap:10px;margin-top:auto;padding-top:20px}
+  button.btn{font:inherit;font-size:16px;font-weight:700;border-radius:12px;padding:15px;cursor:pointer;border:1px solid var(--ink)}
+  .back{background:transparent;color:var(--ink);flex:0 0 96px}
+  .next{background:var(--ink);color:#fff;flex:1}
+  .next[disabled]{opacity:.6;cursor:wait}
+  .done{text-align:center;padding-top:60px}
+  .done .mark{width:64px;height:64px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+      display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 18px}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header>
+    <div class="brand">THE RONZA CLUB</div>
+    <div class="tag" id="tag"></div>
+  </header>
+
+  <div id="flow">
+    <div class="bar" id="bar"></div>
+    <p class="stepno" id="stepno"></p>
+
+    <!-- Step 1: about her -->
+    <section class="step" data-step="info">
+      <h1 data-online="About you" data-gym="Client info"></h1>
+      <p class="lead" data-online="This helps Ronza build a plan that fits you." data-gym="Fill this in with the client."></p>
+      <div class="card">
+        <div class="field gym-only">
+          <label for="date">Assessment date</label>
+          <input type="date" id="date">
+        </div>
+        <div class="field">
+          <label for="name">Full name</label>
+          <input type="text" id="name" autocomplete="name" placeholder="Sara Ahmed" data-req>
+          <div class="err">Enter a name</div>
+        </div>
+        <div class="field">
+          <label for="phone">WhatsApp number</label>
+          <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="01012345678" data-req data-phone>
+          <div class="err">Enter a valid phone number</div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="age">Age</label>
+            <input type="number" id="age" inputmode="numeric" min="12" max="90" placeholder="28" data-req data-num>
+            <div class="err">Enter age</div>
+          </div>
+          <div class="field">
+            <label for="weight">Weight</label>
+            <div class="unit"><input type="number" id="weight" inputmode="decimal" step="0.1" min="30" max="250" placeholder="70" data-req data-num><em>kg</em></div>
+            <div class="err">Enter weight</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="injuries">Injuries or health issues</label>
+          <p class="hint">Anything that hurts or that a doctor told you to be careful with. Write "None" if nothing.</p>
+          <textarea id="injuries" placeholder="None" data-req></textarea>
+          <div class="err">Write "None" if there are no injuries</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 2: goal and training -->
+    <section class="step" data-step="goal">
+      <h1 data-online="Your goal" data-gym="Goal and training"></h1>
+      <p class="lead" data-online="Pick what fits you best." data-gym="Pick what fits the client best."></p>
+      <div class="card">
+        <div class="field">
+          <span class="label">Main goal</span>
+          <div class="chips" data-chips="goal" data-req>
+            <button type="button" class="chip">Fat loss</button>
+            <button type="button" class="chip">Toning</button>
+            <button type="button" class="chip">Strength and muscle</button>
+            <button type="button" class="chip">Pre/postnatal</button>
+            <button type="button" class="chip">General fitness</button>
+          </div>
+          <div class="err">Pick a goal</div>
+        </div>
+        <div class="field">
+          <span class="label">Training experience</span>
+          <div class="chips" data-chips="experience" data-req>
+            <button type="button" class="chip">Beginner</button>
+            <button type="button" class="chip">Intermediate</button>
+            <button type="button" class="chip">Advanced</button>
+          </div>
+          <div class="err">Pick a level</div>
+        </div>
+        <div class="field">
+          <span class="label">Training days per week</span>
+          <div class="chips" data-chips="days" data-req>
+            <button type="button" class="chip">2</button>
+            <button type="button" class="chip">3</button>
+            <button type="button" class="chip">4</button>
+            <button type="button" class="chip">5</button>
+            <button type="button" class="chip">6</button>
+          </div>
+          <div class="err">Pick the number of days</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: measurements -->
+    <section class="step" data-step="measure">
+      <h1>Body measurements</h1>
+      <p class="lead" data-online="Use a soft measuring tape, in cm. Keep it snug but not tight, and measure in the morning if you can." data-gym="All in cm. Measure the right and left sides separately."></p>
+      <div class="card">
+        <div class="field">
+          <label for="chest">Chest</label>
+          <p class="hint online-only">Around the fullest part, tape level under the arms.</p>
+          <div class="unit"><input type="number" id="chest" inputmode="decimal" step="0.1" data-num><em>cm</em></div>
+        </div>
+        <div class="field">
+          <span class="label">Arm</span>
+          <p class="hint online-only">Around the widest part of the upper arm, arm relaxed.</p>
+          <div class="row">
+            <div class="unit"><input type="number" id="armR" inputmode="decimal" step="0.1" placeholder="Right" aria-label="Arm right" data-num><em>R</em></div>
+            <div class="unit"><input type="number" id="armL" inputmode="decimal" step="0.1" placeholder="Left" aria-label="Arm left" data-num><em>L</em></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="waist">Waist</label>
+          <p class="hint online-only">At the level of your belly button. Breathe out normally, don't pull in.</p>
+          <div class="unit"><input type="number" id="waist" inputmode="decimal" step="0.1" data-num><em>cm</em></div>
+        </div>
+        <div class="field">
+          <label for="hips">Hips</label>
+          <p class="hint online-only">Around the widest part of the glutes, feet together.</p>
+          <div class="unit"><input type="number" id="hips" inputmode="decimal" step="0.1" data-num><em>cm</em></div>
+        </div>
+        <div class="field">
+          <span class="label">Thigh</span>
+          <p class="hint online-only">Around the widest part, just under the glutes.</p>
+          <div class="row">
+            <div class="unit"><input type="number" id="thighR" inputmode="decimal" step="0.1" placeholder="Right" aria-label="Thigh right" data-num><em>R</em></div>
+            <div class="unit"><input type="number" id="thighL" inputmode="decimal" step="0.1" placeholder="Left" aria-label="Thigh left" data-num><em>L</em></div>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">Calf</span>
+          <p class="hint online-only">Around the widest part of the calf, standing.</p>
+          <div class="row">
+            <div class="unit"><input type="number" id="calfR" inputmode="decimal" step="0.1" placeholder="Right" aria-label="Calf right" data-num><em>R</em></div>
+            <div class="unit"><input type="number" id="calfL" inputmode="decimal" step="0.1" placeholder="Left" aria-label="Calf left" data-num><em>L</em></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4 (online): squat video -->
+    <section class="step online-step" data-step="video">
+      <h1>Squat video</h1>
+      <p class="lead">Ronza checks how you move from a short video, so she can fix your form from day one.</p>
+      <div class="card">
+        <ol class="tips">
+          <li>Put your phone at hip height, about 2 to 3 metres away.</li>
+          <li>Stand with feet shoulder-width apart and raise your arms straight overhead.</li>
+          <li>Do 5 slow squats facing the camera, then 5 from the side.</li>
+          <li>Wear fitted clothes so your knees and back are easy to see.</li>
+        </ol>
+        <a class="wa" id="waLink" target="_blank" rel="noopener">Send video on WhatsApp</a>
+        <label class="check" style="border-top:0"><input type="checkbox" id="videoSent"> I sent the video</label>
+      </div>
+    </section>
+
+    <!-- Step 4 (gym): overhead squat -->
+    <section class="step gym-step" data-step="squat">
+      <h1>Overhead squat</h1>
+      <p class="lead">Tick what you see during 5 reps from the front and the side.</p>
+      <div class="card">
+        <p class="group">Feet and ankles</p>
+        <label class="check"><input type="checkbox" id="feetTurnOut"> Turn out</label>
+        <p class="group">Knee</p>
+        <label class="check"><input type="checkbox" id="kneeValgus"> Valgus</label>
+        <div class="chips sub" data-chips="kneeSide" id="kneeSide" hidden>
+          <button type="button" class="chip">Right</button>
+          <button type="button" class="chip">Left</button>
+          <button type="button" class="chip">Both</button>
+        </div>
+        <p class="group">LPHC</p>
+        <label class="check"><input type="checkbox" id="forwardLean"> Forward lean</label>
+        <label class="check"><input type="checkbox" id="lowBackArches"> Low back arches</label>
+        <p class="group">Shoulders</p>
+        <label class="check"><input type="checkbox" id="armsFallForward"> Arms fall forward</label>
+      </div>
+    </section>
+
+    <!-- Step 5: review -->
+    <section class="step" data-step="review">
+      <h1 data-online="Check and send" data-gym="Notes and save"></h1>
+      <p class="lead" data-online="Make sure everything looks right." data-gym="Add your notes, then save to the client's file."></p>
+      <div class="card" style="margin-bottom:14px">
+        <div class="field">
+          <label for="notes" data-online="Anything else Ronza should know?" data-gym="Coach notes"></label>
+          <textarea id="notes" placeholder="Optional"></textarea>
+        </div>
+      </div>
+      <div class="card"><table class="sum" id="summary"></table></div>
+      <div class="err" id="sendErr"></div>
+    </section>
+
+    <nav>
+      <button type="button" class="btn back" id="back">Back</button>
+      <button type="button" class="btn next" id="next">Next</button>
+    </nav>
+  </div>
+
+  <div class="done" id="done" hidden>
+    <div class="mark">&#10003;</div>
+    <h1 data-online="Assessment sent" data-gym="Assessment saved"></h1>
+    <p class="lead" data-online="Ronza will review it and message you on WhatsApp with your plan." data-gym="It's in the client's file now."></p>
+    <button type="button" class="btn next gym-only" id="again" style="width:100%;margin-top:10px">Start a new assessment</button>
+  </div>
+</div>
+
+<script>
+  var FORM_TYPE = 'online';
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbydIW5HphQFloYK9G1lxSU_FALMZZ4jYEnieAVvzwGYuDWq6HNhyIS9O8X5gMj2q3LH/exec';
+  var RONZA_WHATSAPP = '201555303834';
+</script>
+<script>
+(function(){
+  var isGym = FORM_TYPE === 'gym';
+  var $ = function(s, r){ return (r || document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  // Texts and sections per form type
+  $('#tag').textContent = isGym ? 'Gym assessment' : 'Online assessment';
+  $$('[data-online]').forEach(function(el){ el.textContent = el.getAttribute(isGym ? 'data-gym' : 'data-online'); });
+  $$(isGym ? '.online-only, .online-step' : '.gym-only, .gym-step').forEach(function(el){ el.remove(); });
+
+  var today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+  if ($('#date')) $('#date').value = today.toISOString().slice(0, 10);
+  if ($('#waLink')) $('#waLink').href = 'https://wa.me/' + RONZA_WHATSAPP + '?text=' +
+    encodeURIComponent('Hi Ronza, this is my overhead squat video for the assessment.');
+
+  var steps = $$('.step');
+  var current = 0;
+  steps.forEach(function(){ $('#bar').appendChild(document.createElement('span')); });
+
+  // Chips: single choice
+  var chosen = {};
+  $$('[data-chips]').forEach(function(group){
+    var key = group.getAttribute('data-chips');
+    $$('.chip', group).forEach(function(chip){
+      chip.setAttribute('aria-pressed', 'false');
+      chip.addEventListener('click', function(){
+        $$('.chip', group).forEach(function(c){ c.setAttribute('aria-pressed', 'false'); });
+        chip.setAttribute('aria-pressed', 'true');
+        chosen[key] = chip.textContent.trim();
+        var err = group.parentNode.querySelector('.err'); if (err) err.classList.remove('show');
+      });
+    });
+  });
+
+  var valgus = $('#kneeValgus');
+  if (valgus) valgus.addEventListener('change', function(){
+    $('#kneeSide').hidden = !valgus.checked;
+    if (!valgus.checked){ delete chosen.kneeSide; $$('#kneeSide .chip').forEach(function(c){ c.setAttribute('aria-pressed','false'); }); }
+  });
+
+  $$('input, textarea').forEach(function(el){
+    el.addEventListener('input', function(){
+      var err = el.closest('.field') && el.closest('.field').querySelector('.err');
+      if (err) err.classList.remove('show');
+    });
+  });
+
+  function validate(step){
+    var ok = true, first = null;
+    $$('input[data-req], textarea[data-req]', step).forEach(function(el){
+      var v = el.value.trim(), bad = !v;
+      if (!bad && el.hasAttribute('data-phone')) bad = v.replace(/[^0-9]/g, '').length < 8;
+      if (!bad && el.hasAttribute('data-num')) bad = isNaN(Number(v));
+      var err = el.closest('.field').querySelector('.err');
+      if (bad){ ok = false; if (err) err.classList.add('show'); if (!first) first = el; }
+    });
+    $$('[data-chips][data-req]', step).forEach(function(group){
+      if (!chosen[group.getAttribute('data-chips')]){
+        ok = false; group.parentNode.querySelector('.err').classList.add('show'); if (!first) first = group;
+      }
+    });
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return ok;
+  }
+
+  function val(id){ var el = $('#' + id); return el ? el.value.trim() : ''; }
+  function on(id){ var el = $('#' + id); return !!(el && el.checked); }
+
+  function collect(){
+    return {
+      formType: FORM_TYPE, date: val('date'), name: val('name'), phone: val('phone'),
+      age: val('age'), weight: val('weight'), injuries: val('injuries'),
+      goal: chosen.goal || '', experience: chosen.experience || '', days: chosen.days || '',
+      chest: val('chest'), armR: val('armR'), armL: val('armL'), waist: val('waist'), hips: val('hips'),
+      thighR: val('thighR'), thighL: val('thighL'), calfR: val('calfR'), calfL: val('calfL'),
+      feetTurnOut: on('feetTurnOut'), kneeValgus: on('kneeValgus'), kneeSide: chosen.kneeSide || '',
+      forwardLean: on('forwardLean'), lowBackArches: on('lowBackArches'), armsFallForward: on('armsFallForward'),
+      videoSent: on('videoSent'), notes: val('notes')
+    };
+  }
+
+  function pair(a, b){ return (a || '–') + ' / ' + (b || '–'); }
+  function buildSummary(){
+    var d = collect(), rows = [
+      ['Name', d.name], ['WhatsApp', d.phone], ['Age', d.age], ['Weight', d.weight + ' kg'],
+      ['Goal', d.goal], ['Experience', d.experience], ['Days per week', d.days], ['Injuries', d.injuries],
+      ['Chest', d.chest], ['Arm R / L', pair(d.armR, d.armL)], ['Waist', d.waist], ['Hips', d.hips],
+      ['Thigh R / L', pair(d.thighR, d.thighL)], ['Calf R / L', pair(d.calfR, d.calfL)]
+    ];
+    if (isGym){
+      var flags = [];
+      if (d.feetTurnOut) flags.push('Feet turn out');
+      if (d.kneeValgus) flags.push('Knee valgus' + (d.kneeSide ? ' (' + d.kneeSide + ')' : ''));
+      if (d.forwardLean) flags.push('Forward lean');
+      if (d.lowBackArches) flags.push('Low back arches');
+      if (d.armsFallForward) flags.push('Arms fall forward');
+      rows.unshift(['Date', d.date]);
+      rows.push(['Overhead squat', flags.length ? flags.join(', ') : 'No issues ticked']);
+    } else {
+      rows.push(['Squat video', d.videoSent ? 'Sent on WhatsApp' : 'Not sent yet']);
+    }
+    var t = $('#summary'); t.innerHTML = '';
+    rows.forEach(function(r){
+      var tr = document.createElement('tr'), a = document.createElement('td'), b = document.createElement('td');
+      a.textContent = r[0]; b.textContent = r[1] || '–'; tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
+    });
+  }
+
+  function show(i){
+    current = i;
+    steps.forEach(function(s, k){ s.classList.toggle('active', k === i); });
+    $$('#bar span').forEach(function(b, k){ b.classList.toggle('on', k <= i); });
+    $('#stepno').textContent = 'Step ' + (i + 1) + ' of ' + steps.length;
+    $('#back').style.visibility = i === 0 ? 'hidden' : 'visible';
+    var last = i === steps.length - 1;
+    $('#next').textContent = last ? (isGym ? 'Save assessment' : 'Send assessment') : 'Next';
+    if (last) buildSummary();
+    window.scrollTo(0, 0);
+  }
+
+  $('#back').addEventListener('click', function(){ if (current > 0) show(current - 1); });
+  $('#next').addEventListener('click', function(){
+    if (!validate(steps[current])) return;
+    if (current < steps.length - 1) return show(current + 1);
+    var btn = $('#next'), err = $('#sendErr');
+    btn.disabled = true; btn.textContent = isGym ? 'Saving…' : 'Sending…'; err.classList.remove('show');
+    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(collect()) })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if (!res || !res.ok) throw new Error(res && res.error ? res.error : 'Unknown error');
+        $('#flow').hidden = true; $('#done').hidden = false; window.scrollTo(0, 0);
+      })
+      .catch(function(e){
+        btn.disabled = false; btn.textContent = isGym ? 'Save assessment' : 'Send assessment';
+        err.textContent = 'Couldn\u2019t save the assessment. Check your connection and try again.' + (e && e.message ? ' (' + e.message + ')' : '');
+        err.classList.add('show');
+      });
+  });
+
+  var again = $('#again');
+  if (again) again.addEventListener('click', function(){ window.location.reload(); });
+
+  show(0);
+})();
+</script>
+</body>
+</html>
